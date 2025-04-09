@@ -1,82 +1,39 @@
-<!-- templates/registros.html -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registros Salvos</title>
-    <link rel="stylesheet" href="/static/styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Registros de Rotina</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: sans-serif; padding: 1rem; }
+        table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+        th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
+        th { background: #f0f0f0; }
+        h1 { font-size: 1.4rem; margin-bottom: 1rem; }
+        .voltar { margin-top: 1rem; display: inline-block; }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Registros Salvos</h1>
-        <a href="/">Voltar</a>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Data</th>
-                    <th>Acordou</th>
-                    <th>Almoço</th>
-                    <th>Jantar</th>
-                    <th>Sono Noturno</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for registro in registros %}
-                <tr>
-                    <td>{{ registro.data_envio }}</td>
-                    <td>{{ registro.acordou or '-' }}</td>
-                    <td>{{ registro.almoco or '-' }}</td>
-                    <td>{{ registro.jantar or '-' }}</td>
-                    <td>{{ registro.sono_noturno or '-' }}</td>
-                </tr>
+    <h1>Registros de Rotina</h1>
+    <table>
+        <thead>
+            <tr>
+                {% for coluna in colunas %}
+                    <th>{{ coluna }}</th>
                 {% endfor %}
-            </tbody>
-        </table>
+            </tr>
+        </thead>
+        <tbody>
+            {% for linha in registros %}
+                <tr>
+                    {% for valor in linha %}
+                        <td>{{ valor }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
-        <h2>Gráfico de Duração das Sonecas</h2>
-        <canvas id="graficoSonecas"></canvas>
-    </div>
-
-    <script>
-        const ctx = document.getElementById('graficoSonecas').getContext('2d');
-        const graficoSonecas = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: {{ datas | safe }},
-                datasets: [
-                    {
-                        label: 'Soneca 1 (min)',
-                        data: {{ soneca1_duracoes | safe }},
-                        backgroundColor: 'rgba(54, 162, 235, 0.6)'
-                    },
-                    {
-                        label: 'Soneca 2 (min)',
-                        data: {{ soneca2_duracoes | safe }},
-                        backgroundColor: 'rgba(255, 206, 86, 0.6)'
-                    },
-                    {
-                        label: 'Soneca 3 (min)',
-                        data: {{ soneca3_duracoes | safe }},
-                        backgroundColor: 'rgba(75, 192, 192, 0.6)'
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: { display: true, text: 'Minutos' }
-                    },
-                    x: {
-                        title: { display: true, text: 'Datas' }
-                    }
-                }
-            }
-        });
-    </script>
+    <a class="voltar" href="/">← Voltar</a>
 </body>
 </html>

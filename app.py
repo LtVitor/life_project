@@ -102,6 +102,23 @@ def submit():
     conn.close()
 
     return redirect('/')
+    
+@app.route('/registros')
+def registros():
+    conn = psycopg2.connect(
+        dbname="cecilia",
+        user="cecilia_user",
+        password="b4amcQtpzs19yJkxGmywv80QKgV1Atll",
+        host="dpg-cvrac5juibrs73dnknig-a",
+        port="5432"
+    )
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM rotina ORDER BY data_envio DESC LIMIT 30")
+    registros = cur.fetchall()
+    colunas = [desc[0] for desc in cur.description]
+    cur.close()
+    conn.close()
+    return render_template('registros.html', registros=registros, colunas=colunas)
 
 if __name__ == '__main__':
     app.run(debug=True)
