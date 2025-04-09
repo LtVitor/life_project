@@ -11,18 +11,18 @@
     <div class="container">
         <h1>Registro de Rotina</h1>
         <form action="/submit" method="POST" id="formRotina">
-            <label>Acordou: <input type="time" name="acordou"></label>
-            <label>Soneca 1 - Início: <input type="time" name="soneca1_inicio"></label>
-            <label>Soneca 1 - Fim: <input type="time" name="soneca1_fim"></label>
-            <label>Almoço: <input type="time" name="almoco"></label>
-            <label>Soneca 2 - Início: <input type="time" name="soneca2_inicio"></label>
-            <label>Soneca 2 - Fim: <input type="time" name="soneca2_fim"></label>
-            <label>Soneca 3 - Início: <input type="time" name="soneca3_inicio"></label>
-            <label>Soneca 3 - Fim: <input type="time" name="soneca3_fim"></label>
-            <label>Jantar: <input type="time" name="jantar"></label>
-            <label>Banho: <input type="time" name="banho"></label>
-            <label>Mamar: <input type="time" name="mamar"></label>
-            <label>Sono Noturno: <input type="time" name="sono_noturno"></label>
+            <label>Acordou: <input type="text" name="acordou" class="hora"></label>
+            <label>Soneca 1 - Início: <input type="text" name="soneca1_inicio" class="hora"></label>
+            <label>Soneca 1 - Fim: <input type="text" name="soneca1_fim" class="hora"></label>
+            <label>Almoço: <input type="text" name="almoco" class="hora"></label>
+            <label>Soneca 2 - Início: <input type="text" name="soneca2_inicio" class="hora"></label>
+            <label>Soneca 2 - Fim: <input type="text" name="soneca2_fim" class="hora"></label>
+            <label>Soneca 3 - Início: <input type="text" name="soneca3_inicio" class="hora"></label>
+            <label>Soneca 3 - Fim: <input type="text" name="soneca3_fim" class="hora"></label>
+            <label>Jantar: <input type="text" name="jantar" class="hora"></label>
+            <label>Banho: <input type="text" name="banho" class="hora"></label>
+            <label>Mamar: <input type="text" name="mamar" class="hora"></label>
+            <label>Sono Noturno: <input type="text" name="sono_noturno" class="hora"></label>
 
             <h2>Despertares</h2>
             <div id="despertares">
@@ -74,12 +74,43 @@
             const container = document.getElementById('despertares');
             const div = document.createElement('div');
             div.innerHTML = `
-                <label>Horário: <input type="time" name="despertares[${contadorDespertares}][horario]"></label>
+                <label>Horário: <input type="text" name="despertares[${contadorDespertares}][horario]" class="hora"></label>
                 <label>Observação: <input type="text" name="despertares[${contadorDespertares}][observacao]"></label>
             `;
             container.appendChild(div);
             contadorDespertares++;
         }
+
+        // Máscara simples de horário (HH:MM)
+        document.addEventListener('input', (e) => {
+            if (e.target.classList.contains('hora')) {
+                let v = e.target.value.replace(/\D/g, '');
+                if (v.length >= 3) v = v.slice(0, 2) + ':' + v.slice(2, 4);
+                e.target.value = v.slice(0, 5);
+            }
+        });
+
+        // Validação de horário no envio do formulário
+        form.addEventListener('submit', (e) => {
+            const erros = [];
+            const camposHora = form.querySelectorAll('.hora');
+            const regexHora = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+
+            camposHora.forEach(campo => {
+                const valor = campo.value.trim();
+                if (valor && !regexHora.test(valor)) {
+                    erros.push(`Horário inválido: ${campo.name} (${valor})`);
+                    campo.style.borderColor = 'red';
+                } else {
+                    campo.style.borderColor = '';
+                }
+            });
+
+            if (erros.length > 0) {
+                e.preventDefault();
+                alert('Por favor, corrija os seguintes horários:\n\n' + erros.join('\n'));
+            }
+        });
     </script>
 </body>
 </html>
