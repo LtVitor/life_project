@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registro de Rotina</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Registro de Rotina</h1>
+    <form method="POST" action="/submit">
+      <label for="acordou">Hora que acordou:</label>
+      <input type="time" id="acordou" name="acordou" required />
+
+      <label for="soneca1">Início da 1ª soneca:</label>
+      <input type="time" id="soneca1" name="soneca1" />
+
+      <label for="soneca2">Início da 2ª soneca:</label>
+      <input type="time" id="soneca2" name="soneca2" />
+
+      <label for="almoco">Hora do almoço:</label>
+      <input type="time" id="almoco" name="almoco" required />
+
+      <label for="jantar">Hora do jantar:</label>
+      <input type="time" id="jantar" name="jantar" required />
+
+      <button type="submit">Salvar</button>
+    </form>
+  </div>
+</body>
+</html>
