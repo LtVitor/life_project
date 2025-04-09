@@ -1,32 +1,82 @@
+<!-- templates/registros.html -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Registro de Rotina</title>
-  <link rel="stylesheet" href="/static/style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registros Salvos</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <div class="container">
-    <h1>Registro de Rotina</h1>
-    <form method="POST" action="/submit">
-      <label for="acordou">Hora que acordou:</label>
-      <input type="time" id="acordou" name="acordou" required />
+    <div class="container">
+        <h1>Registros Salvos</h1>
+        <a href="/">Voltar</a>
 
-      <label for="soneca1">Início da 1ª soneca:</label>
-      <input type="time" id="soneca1" name="soneca1" />
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Acordou</th>
+                    <th>Almoço</th>
+                    <th>Jantar</th>
+                    <th>Sono Noturno</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for registro in registros %}
+                <tr>
+                    <td>{{ registro.data_envio }}</td>
+                    <td>{{ registro.acordou or '-' }}</td>
+                    <td>{{ registro.almoco or '-' }}</td>
+                    <td>{{ registro.jantar or '-' }}</td>
+                    <td>{{ registro.sono_noturno or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 
-      <label for="soneca2">Início da 2ª soneca:</label>
-      <input type="time" id="soneca2" name="soneca2" />
+        <h2>Gráfico de Duração das Sonecas</h2>
+        <canvas id="graficoSonecas"></canvas>
+    </div>
 
-      <label for="almoco">Hora do almoço:</label>
-      <input type="time" id="almoco" name="almoco" required />
-
-      <label for="jantar">Hora do jantar:</label>
-      <input type="time" id="jantar" name="jantar" required />
-
-      <button type="submit">Salvar</button>
-    </form>
-  </div>
+    <script>
+        const ctx = document.getElementById('graficoSonecas').getContext('2d');
+        const graficoSonecas = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {{ datas | safe }},
+                datasets: [
+                    {
+                        label: 'Soneca 1 (min)',
+                        data: {{ soneca1_duracoes | safe }},
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)'
+                    },
+                    {
+                        label: 'Soneca 2 (min)',
+                        data: {{ soneca2_duracoes | safe }},
+                        backgroundColor: 'rgba(255, 206, 86, 0.6)'
+                    },
+                    {
+                        label: 'Soneca 3 (min)',
+                        data: {{ soneca3_duracoes | safe }},
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Minutos' }
+                    },
+                    x: {
+                        title: { display: true, text: 'Datas' }
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 </html>
