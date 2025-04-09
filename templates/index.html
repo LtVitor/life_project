@@ -1,82 +1,85 @@
-<!-- templates/registros.html -->
+<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registros Salvos</title>
+    <title>Registro de Rotina</title>
     <link rel="stylesheet" href="/static/styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>Registros Salvos</h1>
-        <a href="/">Voltar</a>
+        <h1>Registro de Rotina</h1>
+        <form action="/submit" method="POST" id="formRotina">
+            <label>Acordou: <input type="time" name="acordou"></label>
+            <label>Soneca 1 - Início: <input type="time" name="soneca1_inicio"></label>
+            <label>Soneca 1 - Fim: <input type="time" name="soneca1_fim"></label>
+            <label>Almoço: <input type="time" name="almoco"></label>
+            <label>Soneca 2 - Início: <input type="time" name="soneca2_inicio"></label>
+            <label>Soneca 2 - Fim: <input type="time" name="soneca2_fim"></label>
+            <label>Soneca 3 - Início: <input type="time" name="soneca3_inicio"></label>
+            <label>Soneca 3 - Fim: <input type="time" name="soneca3_fim"></label>
+            <label>Jantar: <input type="time" name="jantar"></label>
+            <label>Banho: <input type="time" name="banho"></label>
+            <label>Mamar: <input type="time" name="mamar"></label>
+            <label>Sono Noturno: <input type="time" name="sono_noturno"></label>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Data</th>
-                    <th>Acordou</th>
-                    <th>Almoço</th>
-                    <th>Jantar</th>
-                    <th>Sono Noturno</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for registro in registros %}
-                <tr>
-                    <td>{{ registro.data_envio }}</td>
-                    <td>{{ registro.acordou or '-' }}</td>
-                    <td>{{ registro.almoco or '-' }}</td>
-                    <td>{{ registro.jantar or '-' }}</td>
-                    <td>{{ registro.sono_noturno or '-' }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+            <h2>Despertares</h2>
+            <div id="despertares">
+                <!-- Pares serão adicionados aqui via JS -->
+            </div>
+            <button type="button" onclick="adicionarDespertar()">Adicionar Despertar</button>
 
-        <h2>Gráfico de Duração das Sonecas</h2>
-        <canvas id="graficoSonecas"></canvas>
+            <br><br>
+            <button type="submit">Enviar</button>
+        </form>
+        <a href="/registros">Ver Registros</a>
     </div>
 
     <script>
-        const ctx = document.getElementById('graficoSonecas').getContext('2d');
-        const graficoSonecas = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: {{ datas | safe }},
-                datasets: [
-                    {
-                        label: 'Soneca 1 (min)',
-                        data: {{ soneca1_duracoes | safe }},
-                        backgroundColor: 'rgba(54, 162, 235, 0.6)'
-                    },
-                    {
-                        label: 'Soneca 2 (min)',
-                        data: {{ soneca2_duracoes | safe }},
-                        backgroundColor: 'rgba(255, 206, 86, 0.6)'
-                    },
-                    {
-                        label: 'Soneca 3 (min)',
-                        data: {{ soneca3_duracoes | safe }},
-                        backgroundColor: 'rgba(75, 192, 192, 0.6)'
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: { display: true, text: 'Minutos' }
-                    },
-                    x: {
-                        title: { display: true, text: 'Datas' }
-                    }
+        const form = document.getElementById('formRotina');
+        const LS_KEY = 'formRotinaDados';
+
+        // Restaura dados do localStorage
+        window.onload = () => {
+            const salvos = JSON.parse(localStorage.getItem(LS_KEY));
+            if (salvos) {
+                for (const [k, v] of Object.entries(salvos)) {
+                    const el = form.elements[k];
+                    if (el) el.value = v;
                 }
             }
+        }
+
+        // Salva automaticamente ao digitar
+        form.addEventListener('input', () => {
+            const dados = {};
+            for (let el of form.elements) {
+                if (el.name && el.type !== 'submit') {
+                    dados[el.name] = el.value;
+                }
+            }
+            localStorage.setItem(LS_KEY, JSON.stringify(dados));
         });
+
+        // Limpa localStorage ao enviar
+        form.addEventListener('submit', () => {
+            localStorage.removeItem(LS_KEY);
+        });
+
+        // Adiciona dinamicamente campos de despertar
+        let contadorDespertares = 1;
+        function adicionarDespertar() {
+            if (contadorDespertares > 10) return;
+            const container = document.getElementById('despertares');
+            const div = document.createElement('div');
+            div.innerHTML = `
+                <label>Horário: <input type="time" name="despertares[${contadorDespertares}][horario]"></label>
+                <label>Observação: <input type="text" name="despertares[${contadorDespertares}][observacao]"></label>
+            `;
+            container.appendChild(div);
+            contadorDespertares++;
+        }
     </script>
 </body>
 </html>
