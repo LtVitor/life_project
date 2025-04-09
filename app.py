@@ -1,49 +1,53 @@
 from flask import Flask, request, render_template, redirect
-from datetime import datetime
 import psycopg2
-import os
+from datetime import datetime
 
 app = Flask(__name__)
 
-# Conexão com o PostgreSQL (Render ou local)
-conn = psycopg2.connect(
-    dbname=os.getenv("DB_NAME"),
-    user=os.getenv("DB_USER"),
-    password=os.getenv("DB_PASSWORD"),
-    host=os.getenv("DB_HOST"),
-    port=os.getenv("DB_PORT")
-)
-cursor = conn.cursor()
+# Conexão fixa com os dados que você forneceu
+DATABASE_URL = "dbname=cecilia user=cecilia_user password=b4amcQtpzs19yJkxGmywv80QKgV1Atll host=dpg-cvrac5juibrs73dnknig-a port=5432"
+
+def conectar():
+    return psycopg2.connect(DATABASE_URL)
 
 # Criação das tabelas se não existirem
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS rotina (
-    id SERIAL PRIMARY KEY,
-    data_envio TIMESTAMP,
-    acordou TIME,
-    soneca1_inicio TIME,
-    soneca1_fim TIME,
-    almoco TIME,
-    soneca2_inicio TIME,
-    soneca2_fim TIME,
-    soneca3_inicio TIME,
-    soneca3_fim TIME,
-    jantar TIME,
-    banho TIME,
-    mamar TIME,
-    sono_noturno TIME
-);
-''')
+def criar_tabelas():
+    conn = conectar()
+    cur = conn.cursor()
 
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS despertares (
-    id SERIAL PRIMARY KEY,
-    rotina_id INTEGER REFERENCES rotina(id),
-    horario TIME,
-    observacao TEXT
-);
-''')
-conn.commit()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS rotina (
+            id SERIAL PRIMARY KEY,
+            data_envio TIMESTAMP,
+            acordou TIME,
+            soneca1_inicio TIME,
+            soneca1_fim TIME,
+            almoco TIME,
+            soneca2_inicio TIME,
+            soneca2_fim TIME,
+            soneca3_inicio TIME,
+            soneca3_fim TIME,
+            jantar TIME,
+            banho TIME,
+            mamar TIME,
+            sono_noturno TIME
+        );
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS despertares (
+            id SERIAL PRIMARY KEY,
+            rotina_id INTEGER REFERENCES rotina(id),
+            horario TIME,
+            observacao TEXT
+        );
+    """)
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+criar_tabelas()
 
 @app.route('/')
 def index():
@@ -51,50 +55,53 @@ def index():
 
 @app.route('/submit', methods=['POST'])
 def submit():
-    data_envio = datetime.now()
-    campos = ['acordou', 'soneca1_inicio', 'soneca1_fim', 'almoco', 'soneca2_inicio', 'soneca2_fim',
-              'soneca3_inicio', 'soneca3_fim', 'jantar', 'banho', 'mamar', 'sono_noturno']
-    valores = [request.form.get(c) or None for c in campos]
+    dados = {
+        'data_envio': datetime.now(),
+        'acordou': request.form.get('acordou') or None,
+        'soneca1_inicio': request.form.get('soneca1_inicio') or None,
+        'soneca1_fim': request.form.get('soneca1_fim') or None,
+        'almoco': request.form.get('almoco') or None,
+        'soneca2_inicio': request.form.get('soneca2_inicio') or None,
+        'soneca2_fim': request.form.get('soneca2_fim') or None,
+        'soneca3_inicio': request.form.get('soneca3_inicio') or None,
+        'soneca3_fim': request.form.get('soneca3_fim') or None,
+        'jantar': request.form.get('jantar') or None,
+        'banho': request.form.get('banho') or None,
+        'mamar': request.form.get('mamar') or None,
+        'sono_noturno': request.form.get('sono_noturno') or None,
+    }
 
-    cursor.execute(f'''
-        INSERT INTO rotina (data_envio, {', '.join(campos)})
-        VALUES (%s, {', '.join(['%s'] * len(campos))}) RETURNING id
-    ''', [data_envio] + valores)
-    rotina_id = cursor.fetchone()[0]
+    despertares = []
+    for i in range(1, 11):  # Suporte para até 10 despertares
+        horario = request.form.get(f'despertares[{i}][horario]')
+        obs = request.form.get(f'despertares[{i}][observacao]')
+        if horario or obs:
+            despertares.append((horario or None, obs or None))
 
-    horarios = request.form.getlist('despertar_horario[]')
-    observacoes = request.form.getlist('despertar_obs[]')
-    for h, o in zip(horarios, observacoes):
-        if h:
-            cursor.execute('''
-                INSERT INTO despertares (rotina_id, horario, observacao)
-                VALUES (%s, %s, %s)
-            ''', (rotina_id, h, o or ''))
+    conn = conectar()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO rotina (
+            data_envio, acordou, soneca1_inicio, soneca1_fim, almoco,
+            soneca2_inicio, soneca2_fim, soneca3_inicio, soneca3_fim,
+            jantar, banho, mamar, sono_noturno
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        RETURNING id;
+    """, tuple(dados.values()))
+    rotina_id = cur.fetchone()[0]
+
+    for horario, observacao in despertares:
+        cur.execute("""
+            INSERT INTO despertares (rotina_id, horario, observacao)
+            VALUES (%s, %s, %s);
+        """, (rotina_id, horario, observacao))
 
     conn.commit()
+    cur.close()
+    conn.close()
+
     return redirect('/')
-
-@app.route('/registros')
-def registros():
-    cursor.execute("SELECT * FROM rotina ORDER BY data_envio DESC LIMIT 7")
-    rows = cursor.fetchall()
-    colnames = [desc[0] for desc in cursor.description]
-    registros = [dict(zip(colnames, row)) for row in rows]
-
-    def duracao(inicio, fim):
-        if not inicio or not fim:
-            return 0
-        t1 = datetime.strptime(str(inicio), '%H:%M:%S')
-        t2 = datetime.strptime(str(fim), '%H:%M:%S')
-        return int((t2 - t1).total_seconds() // 60) % (24 * 60)
-
-    datas = [r['data_envio'].strftime('%d/%m') for r in registros]
-    s1 = [duracao(r['soneca1_inicio'], r['soneca1_fim']) for r in registros]
-    s2 = [duracao(r['soneca2_inicio'], r['soneca2_fim']) for r in registros]
-    s3 = [duracao(r['soneca3_inicio'], r['soneca3_fim']) for r in registros]
-
-    return render_template('registros.html', registros=registros, datas=datas,
-                           soneca1_duracoes=s1, soneca2_duracoes=s2, soneca3_duracoes=s3)
 
 if __name__ == '__main__':
     app.run(debug=True)
