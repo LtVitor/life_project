@@ -12,13 +12,21 @@
         <h1>Registro de Rotina</h1>
         <form action="/submit" method="POST" id="formRotina">
             <label>Acordou: <input type="text" name="acordou" class="hora"></label>
-            <label>Soneca 1 - Início: <input type="text" name="soneca1_inicio" class="hora"></label>
-            <label>Soneca 1 - Fim: <input type="text" name="soneca1_fim" class="hora"></label>
+
+            <label>Soneca 1 - Início: <input type="text" name="soneca1_inicio" class="hora" oninput="calcularDuracao('soneca1_inicio','soneca1_fim','duracao1')"></label>
+            <label>Soneca 1 - Fim: <input type="text" name="soneca1_fim" class="hora" oninput="calcularDuracao('soneca1_inicio','soneca1_fim','duracao1')"></label>
+            <div id="duracao1" class="duracao"></div>
+
             <label>Almoço: <input type="text" name="almoco" class="hora"></label>
-            <label>Soneca 2 - Início: <input type="text" name="soneca2_inicio" class="hora"></label>
-            <label>Soneca 2 - Fim: <input type="text" name="soneca2_fim" class="hora"></label>
-            <label>Soneca 3 - Início: <input type="text" name="soneca3_inicio" class="hora"></label>
-            <label>Soneca 3 - Fim: <input type="text" name="soneca3_fim" class="hora"></label>
+
+            <label>Soneca 2 - Início: <input type="text" name="soneca2_inicio" class="hora" oninput="calcularDuracao('soneca2_inicio','soneca2_fim','duracao2')"></label>
+            <label>Soneca 2 - Fim: <input type="text" name="soneca2_fim" class="hora" oninput="calcularDuracao('soneca2_inicio','soneca2_fim','duracao2')"></label>
+            <div id="duracao2" class="duracao"></div>
+
+            <label>Soneca 3 - Início: <input type="text" name="soneca3_inicio" class="hora" oninput="calcularDuracao('soneca3_inicio','soneca3_fim','duracao3')"></label>
+            <label>Soneca 3 - Fim: <input type="text" name="soneca3_fim" class="hora" oninput="calcularDuracao('soneca3_inicio','soneca3_fim','duracao3')"></label>
+            <div id="duracao3" class="duracao"></div>
+
             <label>Jantar: <input type="text" name="jantar" class="hora"></label>
             <label>Banho: <input type="text" name="banho" class="hora"></label>
             <label>Mamar: <input type="text" name="mamar" class="hora"></label>
@@ -35,6 +43,8 @@
         </form>
         <a href="/registros">Ver Registros</a>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
         const form = document.getElementById('formRotina');
@@ -111,6 +121,25 @@
                 alert('Por favor, corrija os seguintes horários:\n\n' + erros.join('\n'));
             }
         });
+
+        // Calcula a duração entre dois horários (formato HH:MM)
+        function calcularDuracao(inicioId, fimId, resultadoId) {
+            const inicio = document.querySelector(`[name='${inicioId}']`).value;
+            const fim = document.querySelector(`[name='${fimId}']`).value;
+            const divResultado = document.getElementById(resultadoId);
+
+            if (/^\d{2}:\d{2}$/.test(inicio) && /^\d{2}:\d{2}$/.test(fim)) {
+                const [h1, m1] = inicio.split(":").map(Number);
+                const [h2, m2] = fim.split(":").map(Number);
+                let totalMin = (h2 * 60 + m2) - (h1 * 60 + m1);
+                if (totalMin < 0) totalMin += 24 * 60;
+                const horas = Math.floor(totalMin / 60);
+                const minutos = totalMin % 60;
+                divResultado.textContent = `⏱️ Duração: ${horas}h ${minutos}min`;
+            } else {
+                divResultado.textContent = "";
+            }
+        }
     </script>
 </body>
 </html>

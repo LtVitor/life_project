@@ -1,39 +1,88 @@
+<!-- templates/registros.html -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Registros de Rotina</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body { font-family: sans-serif; padding: 1rem; }
-        table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
-        th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
-        th { background: #f0f0f0; }
-        h1 { font-size: 1.4rem; margin-bottom: 1rem; }
-        .voltar { margin-top: 1rem; display: inline-block; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gráficos da Rotina</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <h1>Registros de Rotina</h1>
-    <table>
-        <thead>
-            <tr>
-                {% for coluna in colunas %}
-                    <th>{{ coluna }}</th>
-                {% endfor %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for linha in registros %}
-                <tr>
-                    {% for valor in linha %}
-                        <td>{{ valor }}</td>
-                    {% endfor %}
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="container">
+        <h1>Gráficos da Rotina</h1>
 
-    <a class="voltar" href="/">← Voltar</a>
+        <canvas id="graficoSoneca" height="150"></canvas>
+        <canvas id="graficoAcordou" height="150"></canvas>
+        <canvas id="graficoDespertares" height="150"></canvas>
+
+        <br>
+        <a href="/">Voltar</a>
+    </div>
+
+    <script>
+        const registros = {{ registros_json | safe }};
+
+        const dias = [];
+        const duracoesSoneca = [];
+        const horariosAcordou = [];
+        const qtdDespertares = [];
+
+        registros.forEach(reg => {
+            const dia = new Date(reg.data_envio).toLocaleDateString('pt-BR');
+            dias.push(dia);
+
+            let totalMin = 0;
+            ['soneca1_inicio','soneca1_fim','soneca2_inicio','soneca2_fim','soneca3_inicio','soneca3_fim'].reduce((_, __, i, arr) => {
+                if (i % 2 === 0) {
+                    const ini = reg[arr[i]];
+                    const fim = reg[arr[i+1]];
+                    if (ini && fim) {
+                        const [h1, m1] = ini.split(':').map(Number);
+                        const [h2, m2] = fim.split(':').map(Number);
+                        let min = (h2*60 + m2) - (h1*60 + m1);
+                        if (min < 0) min += 1440;
+                        totalMin += min;
+                    }
+                }
+                return null;
+            }, 0);
+            duracoesSoneca.push(totalMin);
+
+            if (reg.acordou) {
+                const [h, m] = reg.acordou.split(":").map(Number);
+                horariosAcordou.push(h + m/60);
+            } else {
+                horariosAcordou.push(null);
+            }
+
+            const despertares = Object.keys(reg).filter(k => k.startsWith('despertar') && k.endsWith('_horario'));
+            qtdDespertares.push(despertares.length);
+        });
+
+        const cfgLinha = (ctx, label, dados, cor) => new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dias,
+                datasets: [{
+                    label,
+                    data: dados,
+                    fill: false,
+                    borderColor: cor,
+                    tension: 0.3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'top' }, title: { display: true, text: label } }
+            }
+        });
+
+        cfgLinha(document.getElementById('graficoSoneca'), 'Tempo total de soneca (min)', duracoesSoneca, 'blue');
+        cfgLinha(document.getElementById('graficoAcordou'), 'Horário em que acordou (em horas)', horariosAcordou, 'green');
+        cfgLinha(document.getElementById('graficoDespertares'), 'Quantidade de despertares', qtdDespertares, 'orange');
+    </script>
 </body>
 </html>
