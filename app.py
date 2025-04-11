@@ -2,7 +2,7 @@ from flask import Flask, request, render_template, redirect
 import psycopg2
 from datetime import datetime
 import json
-from datetime import datetime, time
+from datetime import date, datetime, time
 
 app = Flask(__name__)
 
@@ -154,23 +154,20 @@ def graficos():
     cur.execute("SELECT * FROM rotina ORDER BY data_envio")
     colnames = [desc[0] for desc in cur.description]
     rows = cur.fetchall()
+    registros = [dict(zip(colnames, row)) for row in rows]
     cur.close()
     conn.close()
 
-    registros = []
-    for row in rows:
-        registro = {}
-        for key, value in zip(colnames, row):
-            if isinstance(value, (datetime, date)):
-                registro[key] = value.isoformat()
-            elif isinstance(value, time):
-                registro[key] = value.strftime("%H:%M")
-            else:
-                registro[key] = value
-        registros.append(registro)
+    from datetime import date, datetime, time
 
-    return render_template("graficos.html", registros_json=json.dumps(registros, ensure_ascii=False))
+    def json_serial(obj):
+        if isinstance(obj, (datetime, date, time)):
+            return obj.isoformat()
+        raise TypeError(f"Type {type(obj)} not serializable")
 
+    registros_json = json.dumps(registros, default=json_serial, ensure_ascii=False)
+
+    return render_template("graficos.html", registros_json=registros_json)
 
 
 if __name__ == '__main__':
