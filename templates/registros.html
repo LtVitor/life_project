@@ -9,13 +9,9 @@
     <div class="container">
         <h1>Registros</h1>
         <ul>
-		{% for reg in registros %}
-        <li>
-            <a href="{{ url_for('registro_por_data', data=reg.data_envio) }}">
-                {{ reg.data_envio.strftime("%d-%m-%Y") }}
-            </a>
-        </li>
-		{% endfor %}
+		{% for data in datas %}
+                 <li><a href="{{ url_for('registro_por_data', data=data) }}">{{ data }}</a></li>
+             {% endfor %}
 		</ul>
 
         <br>
