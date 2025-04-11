@@ -154,11 +154,22 @@ def graficos():
     cur.execute("SELECT * FROM rotina ORDER BY data_envio")
     colnames = [desc[0] for desc in cur.description]
     rows = cur.fetchall()
-    registros = [dict(zip(colnames, row)) for row in rows]
     cur.close()
     conn.close()
 
-    return render_template("graficos.html", registros=registros)
+    registros = []
+    for row in rows:
+        registro = {}
+        for key, value in zip(colnames, row):
+            if isinstance(value, (datetime, date)):
+                registro[key] = value.isoformat()
+            elif isinstance(value, time):
+                registro[key] = value.strftime("%H:%M")
+            else:
+                registro[key] = value
+        registros.append(registro)
+
+    return render_template("graficos.html", registros_json=json.dumps(registros, ensure_ascii=False))
 
 
 
