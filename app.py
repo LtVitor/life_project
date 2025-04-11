@@ -114,24 +114,52 @@ def registros():
         password="b4amcQtpzs19yJkxGmywv80QKgV1Atll"
     )
     cur = conn.cursor()
-    cur.execute("SELECT * FROM rotina ORDER BY data_envio")
+    cur.execute("SELECT DISTINCT data_envio::date FROM rotina ORDER BY data_envio DESC")
+    datas = [row[0].strftime('%Y-%m-%d') for row in cur.fetchall()]
+    cur.close()
+    conn.close()
+    return render_template("registros.html", datas=datas)
+    
+@app.route('/registro/<data>')
+def registro_por_data(data):
+    conn = psycopg2.connect(
+        host="dpg-cvrac5juibrs73dnknig-a",
+        database="cecilia",
+        user="cecilia_user",
+        password="b4amcQtpzs19yJkxGmywv80QKgV1Atll"
+    )
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM rotina WHERE data_envio::date = %s", (data,))
     colnames = [desc[0] for desc in cur.description]
-    rows = cur.fetchall()
-    
-    registros = []
-    for row in rows:
-        registro = {}
-        for col, val in zip(colnames, row):
-            if isinstance(val, (datetime, time)):
-                registro[col] = val.strftime('%H:%M') if isinstance(val, time) else val.isoformat()
-            else:
-                registro[col] = val
-        registros.append(registro)
-    
+    row = cur.fetchone()
     cur.close()
     conn.close()
 
-    return render_template("registros.html", registros_json=json.dumps(registros, ensure_ascii=False))
+    if row:
+        registro = dict(zip(colnames, row))
+    else:
+        registro = None
+
+    return render_template("registro_detalhado.html", data=data, registro=registro)
+
+@app.route('/graficos')
+def graficos():
+    conn = psycopg2.connect(
+        host="dpg-cvrac5juibrs73dnknig-a",
+        database="cecilia",
+        user="cecilia_user",
+        password="b4amcQtpzs19yJkxGmywv80QKgV1Atll"
+    )
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM rotina ORDER BY data_envio")
+    colnames = [desc[0] for desc in cur.description]
+    rows = cur.fetchall()
+    registros = [dict(zip(colnames, row)) for row in rows]
+    cur.close()
+    conn.close()
+
+    return render_template("graficos.html", registros=registros)
+
 
 
 if __name__ == '__main__':

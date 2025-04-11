@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro de {{ data }}</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Registro do dia {{ data }}</h1>
+
+        {% if registro %}
+            <table border="1" cellpadding="8">
+                {% for chave, valor in registro.items() %}
+                    <tr>
+                        <td><strong>{{ chave }}</strong></td>
+                        <td>{{ valor if valor is not none else "-" }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <p>Nenhum registro encontrado para esta data.</p>
+        {% endif %}
+
+        <br>
+        <a href="/registros">Voltar para lista</a>
+    </div>
+</body>
+</html>

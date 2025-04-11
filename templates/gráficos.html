@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Gráficos da Rotina</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Gráficos da Rotina</h1>
+
+        <canvas id="graficoSoneca" height="150"></canvas>
+        <canvas id="graficoAcordou" height="150"></canvas>
+        <canvas id="graficoSoneca1" height="150"></canvas>
+        <canvas id="graficoSoneca2" height="150"></canvas>
+
+        <br>
+        <a href="/registros">Voltar para os registros</a>
+    </div>
+
+    <script>
+        const registros = {{ registros | tojson }};
+
+        const dias = [];
+        const duracoesSoneca = [];
+        const horariosAcordou = [];
+        const duracoesSoneca1 = [];
+        const duracoesSoneca2 = [];
+
+        registros.forEach(reg => {
+            const dia = new Date(reg.data_envio).toLocaleDateString('pt-BR');
+            dias.push(dia);
+
+            // Tempo total de soneca (em horas)
+            let totalMin = 0;
+            ['soneca1_inicio','soneca1_fim','soneca2_inicio','soneca2_fim','soneca3_inicio','soneca3_fim'].reduce((_, __, i, arr) => {
+                if (i % 2 === 0) {
+                    const ini = reg[arr[i]];
+                    const fim = reg[arr[i+1]];
+                    if (ini && fim) {
+                        const [h1, m1] = ini.split(':').map(Number);
+                        const [h2, m2] = fim.split(':').map(Number);
+                        let min = (h2*60 + m2) - (h1*60 + m1);
+                        if (min < 0) min += 1440;
+                        totalMin += min;
+                    }
+                }
+                return null;
+            }, 0);
+            duracoesSoneca.push(totalMin / 60);  // Convertido para horas
+
+            // Horário que acordou
+            if (reg.acordou) {
+                const [h, m] = reg.acordou.split(":").map(Number);
+                horariosAcordou.push(h + m/60);
+            } else {
+                horariosAcordou.push(null);
+            }
+
+            // Duração da primeira soneca
+            let soneca1 = 0;
+            const s1_inicio = reg.soneca1_inicio;
+            const s1_fim = reg.soneca1_fim;
+            if (s1_inicio && s1_fim) {
+                const [h1, m1] = s1_inicio.split(':').map(Number);
+                const [h2, m2] = s1_fim.split(':').map(Number);
+                soneca1 = (h2 * 60 + m2) - (h1 * 60 + m1);
+                if (soneca1 < 0) soneca1 += 1440;
+            }
+            duracoesSoneca1.push(soneca1 / 60);  // Convertido para horas
+
+            // Duração da segunda soneca
+            let soneca2 = 0;
+            const s2_inicio = reg.soneca2_inicio;
+            const s2_fim = reg.soneca2_fim;
+            if (s2_inicio && s2_fim) {
+                const [h1, m1] = s2_inicio.split(':').map(Number);
+                const [h2, m2] = s2_fim.split(':').map(Number);
+                soneca2 = (h2 * 60 + m2) - (h1 * 60 + m1);
+                if (soneca2 < 0) soneca2 += 1440;
+            }
+            duracoesSoneca2.push(soneca2 / 60);  // Convertido para horas
+        });
+
+        // Função para gerar gráfico de linha
+        const cfgLinha = (ctx, label, dados, cor) => new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dias,
+                datasets: [{
+                    label,
+                    data: dados,
+                    fill: false,
+                    borderColor: cor,
+                    tension: 0.3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'top' }, title: { display: true, text: label } }
+            }
+        });
+
+        // Gráfico de tempo total de soneca (em horas)
+        cfgLinha(document.getElementById('graficoSoneca'), 'Tempo total de soneca (horas)', duracoesSoneca, 'blue');
+
+        // Gráfico de horário em que acordou (em horas)
+        const ctxAcordou = document.getElementById('graficoAcordou');
+        new Chart(ctxAcordou, {
+            type: 'line',
+            data: {
+                labels: dias,
+                datasets: [{
+                    label: 'Hora em que acordou (horas:minutos)',
+                    data: horariosAcordou,
+                    fill: false,
+                    borderColor: 'green',
+                    tension: 0.3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { 
+                    legend: { position: 'top' }, 
+                    title: { display: true, text: 'Hora em que acordou' } 
+                },
+                scales: {
+                    y: {
+                        ticks: {
+                            callback: function(value) {
+                                const horas = Math.floor(value);
+                                const minutos = Math.round((value - horas) * 60);
+                                return `${horas}:${minutos < 10 ? '0' + minutos : minutos}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Gráfico da duração da primeira soneca
+        cfgLinha(document.getElementById('graficoSoneca1'), 'Duração da primeira soneca (horas)', duracoesSoneca1, 'orange');
+
+        // Gráfico da duração da segunda soneca
+        cfgLinha(document.getElementById('graficoSoneca2'), 'Duração da segunda soneca (horas)', duracoesSoneca2, 'red');
+    </script>
+</body>
+</html>
