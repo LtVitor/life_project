@@ -2,6 +2,7 @@ from flask import Flask, request, render_template, redirect
 import psycopg2
 from datetime import datetime
 import json
+from datetime import datetime, time
 
 app = Flask(__name__)
 
@@ -116,7 +117,17 @@ def registros():
     cur.execute("SELECT * FROM rotina ORDER BY data_envio")
     colnames = [desc[0] for desc in cur.description]
     rows = cur.fetchall()
-    registros = [dict(zip(colnames, row)) for row in rows]
+    
+    registros = []
+    for row in rows:
+        registro = {}
+        for col, val in zip(colnames, row):
+            if isinstance(val, (datetime, time)):
+                registro[col] = val.strftime('%H:%M') if isinstance(val, time) else val.isoformat()
+            else:
+                registro[col] = val
+        registros.append(registro)
+    
     cur.close()
     conn.close()
 
